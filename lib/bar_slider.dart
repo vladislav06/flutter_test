@@ -4,11 +4,11 @@ class BarSlider extends StatefulWidget {
   final double value;
   final double max;
   final double min;
-  final int? divisions;
   final String? label;
   final ValueChanged<double>? onChanged;
   final ValueChanged<double>? onChangeStart;
   final ValueChanged<double>? onChangeEnd;
+  final double cornerRadius;
 
   const BarSlider({
     Key? key,
@@ -18,11 +18,10 @@ class BarSlider extends StatefulWidget {
     this.onChangeEnd,
     this.min = 0.0,
     this.max = 1.0,
-    this.divisions,
     this.label,
+    this.cornerRadius = 11,
   })  : assert(min <= max),
         assert(value >= min && value <= max),
-        assert(divisions == null || divisions > 0),
         super(key: key);
 
   @override
@@ -36,9 +35,13 @@ class _BarSlider extends State<BarSlider> {
   Widget build(BuildContext context) {
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
-        trackShape: BarSliderTrackShape(),
-        thumbShape: RoundSliderThumbShape(enabledThumbRadius: 0.0),
-        trackHeight: 22.0,
+        trackShape: BarSliderTrackShape(
+          cornerRadius: Radius.circular(widget.cornerRadius),
+        ),
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 0.0),
+        thumbColor: Colors.transparent,
+        trackHeight: 40.0,
+        overlayColor: Colors.transparent,
       ),
       child: Slider(
         value: widget.value,
@@ -47,7 +50,6 @@ class _BarSlider extends State<BarSlider> {
         onChangeEnd: widget.onChangeEnd,
         min: widget.min,
         max: widget.max,
-        divisions: widget.divisions,
         label: widget.label,
       ),
     );
@@ -56,7 +58,10 @@ class _BarSlider extends State<BarSlider> {
 
 class BarSliderTrackShape extends SliderTrackShape {
   /// Create a slider track that draws 2 rectangles.
-  const BarSliderTrackShape({this.disabledThumbGapWidth = 2.0});
+  const BarSliderTrackShape({
+    this.disabledThumbGapWidth = 2.0,
+    this.cornerRadius = const Radius.circular(11),
+  });
 
   /// Horizontal spacing, or gap, between the disabled thumb and the track.
   ///
@@ -65,6 +70,9 @@ class BarSliderTrackShape extends SliderTrackShape {
   /// Material spec defaults this gap width 2, which is half of the disabled
   /// thumb radius.
   final double disabledThumbGapWidth;
+
+  /// slider track corner radius
+  final Radius cornerRadius;
 
   @override
   Rect getPreferredRect({
@@ -85,9 +93,6 @@ class BarSliderTrackShape extends SliderTrackShape {
     final double trackLeft = offset.dx + overlayWidth / 2;
     final double trackTop =
         offset.dy + (parentBox.size.height - trackHeight) / 2;
-    // TODO(clocksmith): Although this works for a material, perhaps the default
-    // rectangular track should be padded not just by the overlay, but by the
-    // max of the thumb and the overlay, in case there is no overlay.
     final double trackWidth = parentBox.size.width - overlayWidth;
     return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
   }
@@ -102,7 +107,7 @@ class BarSliderTrackShape extends SliderTrackShape {
     required TextDirection textDirection,
     required Offset thumbCenter,
     bool isDiscrete = false,
-    bool isEnabled = true,
+    bool isEnabled = false,
   }) {
     // If the slider track height is 0, then it makes no difference whether the
     // track is painted or not, therefore the painting can be a no-op.
@@ -164,33 +169,26 @@ class BarSliderTrackShape extends SliderTrackShape {
       trackRect.bottom,
     );
 
-    final Rect rightTrackSegment = Rect.fromLTRB(
-        thumbCenter.dx + horizontalAdjustment,
-        trackRect.top,
-        trackRect.right - 11,
-        trackRect.bottom);
-
-    //  context.canvas.drawColor(const Color.fromARGB(255, 255, 255, 255), BlendMode.srcATop);
-
-   // context.canvas.saveLayer(trackRect, Paint()..color = const Color.fromARGB(255, 255, 255, 255)..blendMode=BlendMode.src);
-
-    context.canvas.save();
-
-    context.canvas.drawRect(leftTrackSegment, Paint()..color = const Color.fromARGB(255, 0, 0, 0));
-
-    Paint paint = Paint();
-    paint.color = Colors.red;
-    paint.blendMode = BlendMode.srcATop;
-
+    //right side of bar / background
     context.canvas.drawRRect(
-        RRect.fromRectAndRadius(trackRect, const Radius.circular(11)), paint);
+        RRect.fromRectAndRadius(trackRect, cornerRadius),
+        Paint()
+          ..color = rightTrackPaint.color
+          ..blendMode = BlendMode.src);
 
-    context.canvas.drawColor(Color.fromARGB(255, 255, 255, 255), BlendMode.dstATop);
+    //mask
+    context.canvas.drawRect(leftTrackSegment,
+        Paint()..color = const Color.fromARGB(255, 255, 255, 255));
 
-    //  context.canvas.drawColor(const Color.fromARGB(255, 255, 0, 0), BlendMode.dstATop);
-//    context.canvas.restore();
+    //left side of bar
+    context.canvas.drawRRect(
+        RRect.fromRectAndRadius(trackRect, cornerRadius),
+        Paint()
+          ..color = leftTrackPaint.color
+          ..blendMode = BlendMode.srcATop);
 
-    // context.canvas.translate(thumbCenter.dx,0);
-    // context.canvas.drawRect(leftTrackSegment, leftTrackPaint);
+    //background of bar
+    context.canvas
+        .drawColor(const Color.fromARGB(255, 255, 255, 255), BlendMode.dstATop);
   }
 }

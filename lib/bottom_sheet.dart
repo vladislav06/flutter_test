@@ -18,14 +18,14 @@ class _BottomSheetTest extends State<BottomSheetTest> {
     return Scaffold(
       body: Center(
         child: ElevatedButton(
-          child: const Text('showBottomSheet'),
+          child: Text('showBottomSheet $_currentSliderValue'),
           onPressed: () {
             showModalBottomSheet(
               context: context,
               builder: (context) {
-                return StatefulBuilder(builder: (BuildContext context,
-                    StateSetter setSheetState /*You can rename this!*/) {
-                  return Container(
+                return StatefulBuilder(
+                    builder: (BuildContext context, StateSetter setSheetState) {
+                  return SizedBox(
                     height: 400,
                     child: BarSlider(
                       value: _currentSliderValue,
@@ -35,6 +35,7 @@ class _BottomSheetTest extends State<BottomSheetTest> {
                         setSheetState(() {
                           _currentSliderValue = value;
                         });
+                        setState(() {});
                       },
                     ),
                   );
